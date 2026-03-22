@@ -387,3 +387,99 @@ async def test_constitution(payload: dict):
                 "seal": seal, "response_preview": final[:200]}
     except Exception as e:
         return {"error": str(e)}
+
+# Multi-Agent Debate Endpoints
+@app.post("/ai/debate")
+async def ai_debate(payload: dict):
+    prompt   = payload.get("prompt", "")
+    provider = payload.get("provider", "auto")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("debate",
+            os.path.expanduser("~/charlie2/debate/debate_engine.py"))
+        db_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(db_mod)
+        result = db_mod.quick_debate(prompt, provider)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/ai/debate-review")
+async def debate_review(payload: dict):
+    prompt   = payload.get("prompt", "")
+    response = payload.get("response", "")
+    provider = payload.get("provider", "auto")
+    if not prompt or not response:
+        return {"error": "prompt and response required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("debate",
+            os.path.expanduser("~/charlie2/debate/debate_engine.py"))
+        db_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(db_mod)
+        result = db_mod.run_debate(prompt, response, provider)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/ai/supreme-chat")
+async def supreme_chat(payload: dict):
+    """Constitutional enforcement + Debate council + RAG — the full sovereign stack"""
+    prompt   = payload.get("prompt", "")
+    provider = payload.get("provider", "auto")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+
+        # Step 1: RAG enhanced prompt
+        rag_spec = importlib.util.spec_from_file_location("rag",
+            os.path.expanduser("~/charlie2/memory/rag_engine.py"))
+        rag = importlib.util.module_from_spec(rag_spec)
+        rag_spec.loader.exec_module(rag)
+        enhanced_prompt, ctx = rag.rag_chat(prompt)
+
+        # Step 2: Get initial AI response
+        mp_spec = importlib.util.spec_from_file_location("mp",
+            os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+        mp = importlib.util.module_from_spec(mp_spec)
+        mp_spec.loader.exec_module(mp)
+        ai_result = mp.route(enhanced_prompt, provider)
+        initial_response = ai_result.get("response", "")
+
+        # Step 3: Constitutional enforcement
+        ef_spec = importlib.util.spec_from_file_location("enforcer",
+            os.path.expanduser("~/charlie2/constitution/enforcer.py"))
+        ef = importlib.util.module_from_spec(ef_spec)
+        ef_spec.loader.exec_module(ef)
+        const_response, const_verdict, violations, seal = ef.enforce(
+            prompt, initial_response, provider)
+
+        # Step 4: Debate council on constitutionally-cleared response
+        db_spec = importlib.util.spec_from_file_location("debate",
+            os.path.expanduser("~/charlie2/debate/debate_engine.py"))
+        db_mod = importlib.util.module_from_spec(db_spec)
+        db_spec.loader.exec_module(db_mod)
+        debate_result = db_mod.run_debate(prompt, const_response, provider)
+
+        # Step 5: Store final response in memory
+        try:
+            rag.remember(
+                f"Q: {prompt} A: {debate_result['final_response'][:200]}",
+                {"source": "supreme-chat", "verdict": debate_result["verdict"]})
+        except: pass
+
+        return {
+            "response":              debate_result["final_response"],
+            "provider":              ai_result.get("provider", ""),
+            "pipeline":              "RAG→AI→Constitutional→Debate",
+            "rag_memories_used":     ctx,
+            "constitutional_verdict": const_verdict,
+            "constitutional_violations": len(violations),
+            "debate_verdict":        debate_result["verdict"],
+            "debate_hash":           debate_result["debate_hash"],
+            "debate_rounds":         3,
+            "sovereign_seal":        seal
+        }
+    except Exception as e:
+        return {"error": str(e), "pipeline": "supreme-chat"}

@@ -565,3 +565,143 @@ async def selfimprove_proposals():
         }
     except Exception as e:
         return {"error": str(e)}
+
+# Real-Time Streaming Endpoints
+from fastapi.responses import StreamingResponse, HTMLResponse
+import asyncio as _asyncio
+import json as _json_s
+
+@app.post("/ai/stream")
+async def ai_stream(payload: dict):
+    prompt   = payload.get("prompt", "")
+    provider = payload.get("provider", "auto")
+    if not prompt:
+        return {"error": "prompt required"}
+
+    async def event_gen():
+        import importlib.util as _ilu, hashlib as _hs, requests as _rq
+
+        yield f"data: {_json_s.dumps({'event':'start','provider':provider})}\n\n"
+
+        full = ""
+
+        # Try Ollama native stream first
+        try:
+            test = _rq.get("http://127.0.0.1:11434/api/tags", timeout=2)
+            if test.status_code == 200:
+                yield f"data: {_json_s.dumps({'event':'provider','provider':'ollama:local'})}\n\n"
+                spec = _ilu.spec_from_file_location("se",
+                    os.path.expanduser("~/charlie2/streaming/stream_engine.py"))
+                se = _ilu.module_from_spec(spec)
+                spec.loader.exec_module(se)
+                async for token in se.async_stream_ollama(prompt):
+                    full += token
+                    yield f"data: {_json_s.dumps({'event':'token','token':token,'provider':'ollama:local'})}\n\n"
+                    await _asyncio.sleep(0)
+                h = _hs.sha256(full.encode()).hexdigest()[:16]
+                yield f"data: {_json_s.dumps({'event':'done','provider':'ollama:local','governance_hash':h,'total':len(full)})}\n\n"
+                return
+        except: pass
+
+        # Fallback: regular AI then word-by-word simulate
+        try:
+            mp_spec = _ilu.spec_from_file_location("mp",
+                os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+            mp = _ilu.module_from_spec(mp_spec)
+            mp_spec.loader.exec_module(mp)
+            result  = mp.route(prompt, provider)
+            resp    = result.get("response", "")
+            prov    = result.get("provider", "auto")
+            yield f"data: {_json_s.dumps({'event':'provider','provider':prov})}\n\n"
+            words = resp.split(" ")
+            for i, word in enumerate(words):
+                token = word + (" " if i < len(words)-1 else "")
+                full += token
+                yield f"data: {_json_s.dumps({'event':'token','token':token,'provider':prov})}\n\n"
+                await _asyncio.sleep(0.025)
+            h = _hs.sha256(full.encode()).hexdigest()[:16]
+            yield f"data: {_json_s.dumps({'event':'done','provider':prov,'governance_hash':h,'total':len(full)})}\n\n"
+        except Exception as e:
+            yield f"data: {_json_s.dumps({'event':'error','error':str(e)})}\n\n"
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":               "no-cache",
+            "X-Accel-Buffering":           "no",
+            "Access-Control-Allow-Origin": "*"
+        })
+
+@app.get("/stream", include_in_schema=False)
+async def stream_ui():
+    try:
+        with open(os.path.expanduser("~/charlie2/streaming/stream_ui.html")) as f:
+            return HTMLResponse(f.read())
+    except Exception as e:
+        return HTMLResponse(f"<pre>Stream UI error: {e}</pre>")
+
+@app.post("/ai/stream/constitutional")
+async def stream_constitutional(payload: dict):
+    """Stream with constitutional enforcement per completed response"""
+    prompt   = payload.get("prompt", "")
+    provider = payload.get("provider", "auto")
+    if not prompt:
+        return {"error": "prompt required"}
+
+    async def const_gen():
+        import importlib.util as _ilu, hashlib as _hs
+
+        yield f"data: {_json_s.dumps({'event':'start','mode':'constitutional-stream'})}\n\n"
+
+        full = ""
+        prov = provider
+
+        # Stream tokens
+        try:
+            import requests as _rq
+            test = _rq.get("http://127.0.0.1:11434/api/tags", timeout=2)
+            if test.status_code == 200:
+                spec = _ilu.spec_from_file_location("se",
+                    os.path.expanduser("~/charlie2/streaming/stream_engine.py"))
+                se = _ilu.module_from_spec(spec)
+                spec.loader.exec_module(se)
+                prov = "ollama:local"
+                yield f"data: {_json_s.dumps({'event':'provider','provider':prov})}\n\n"
+                async for token in se.async_stream_ollama(prompt):
+                    full += token
+                    yield f"data: {_json_s.dumps({'event':'token','token':token})}\n\n"
+                    await _asyncio.sleep(0)
+        except:
+            mp_spec = _ilu.spec_from_file_location("mp",
+                os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+            mp = _ilu.module_from_spec(mp_spec)
+            mp_spec.loader.exec_module(mp)
+            result = mp.route(prompt, provider)
+            full = result.get("response","")
+            prov = result.get("provider","auto")
+            for word in full.split(" "):
+                yield f"data: {_json_s.dumps({'event':'token','token':word+' '})}\n\n"
+                await _asyncio.sleep(0.02)
+
+        # Constitutional review on completed response
+        try:
+            ef_spec = _ilu.spec_from_file_location("ef",
+                os.path.expanduser("~/charlie2/constitution/enforcer.py"))
+            ef = _ilu.module_from_spec(ef_spec)
+            ef_spec.loader.exec_module(ef)
+            final, verdict, violations, seal = ef.enforce(prompt, full, prov)
+            h = _hs.sha256(final.encode()).hexdigest()[:16]
+            yield f"data: {_json_s.dumps({'event':'done','provider':prov,'governance_hash':h,'constitutional_verdict':verdict,'violations':len(violations),'seal':seal})}\n\n"
+        except Exception as e:
+            h = _hs.sha256(full.encode()).hexdigest()[:16]
+            yield f"data: {_json_s.dumps({'event':'done','provider':prov,'governance_hash':h,'constitutional_note':str(e)})}\n\n"
+
+    return StreamingResponse(
+        const_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":               "no-cache",
+            "X-Accel-Buffering":           "no",
+            "Access-Control-Allow-Origin": "*"
+        })

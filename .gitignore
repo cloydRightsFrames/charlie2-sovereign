@@ -11,3 +11,5 @@ node_modules/
 c2_*.sh
 tor_data/
 tor_service/hs_ed25519_secret_key
+wireguard/*_private.key
+wireguard/wg0_phone.conf

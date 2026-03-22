@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,9 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.*
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 
 // ⚡ Charlie 2.0 — Sovereign Android App
 // RightsFrames Intelligence / cloydRightsFrames
@@ -38,6 +36,7 @@ object C2Colors {
     val Green     = Color(0xFF3FB950)
     val Yellow    = Color(0xFFE3B341)
     val Red       = Color(0xFFF85149)
+    val Purple    = Color(0xFFA371F7)
     val TextLight = Color(0xFFE6EDF3)
     val Muted     = Color(0xFF8B949E)
     val Border    = Color(0xFF30363D)
@@ -50,84 +49,31 @@ data class ChatMessage(
     val ts: Long = System.currentTimeMillis()
 )
 
-object Charlie2Client {
-    var baseUrl     = "http://10.99.0.1:8000"    // WireGuard mesh — phone
-    var ollamaUrl   = "http://10.99.0.1:11434"   // Ollama on phone
-    var railwayUrl  = ""                          // Set after Railway deploy
-
-    private fun post(url: String, body: String, timeoutMs: Int = 30000): String {
-        return try {
-            val c = URL(url).openConnection() as HttpURLConnection
-            c.requestMethod = "POST"
-            c.doOutput = true
-            c.connectTimeout = 8000
-            c.readTimeout = timeoutMs
-            c.setRequestProperty("Content-Type", "application/json")
-            c.outputStream.write(body.toByteArray())
-            c.inputStream.bufferedReader().readText()
-        } catch (e: Exception) { "{\"error\":\"${e.message}\"}" }
-    }
-
-    private fun get(url: String): String {
-        return try {
-            val c = URL(url).openConnection() as HttpURLConnection
-            c.connectTimeout = 5000; c.readTimeout = 10000
-            c.inputStream.bufferedReader().readText()
-        } catch (e: Exception) { "{\"error\":\"${e.message}\"}" }
-    }
-
-    fun health(): Pair<String, String> {
-        val raw = get("$baseUrl/health")
-        return try {
-            val j = JSONObject(raw)
-            Pair(j.optString("status", "OFFLINE"), j.optString("memory", "--"))
-        } catch (e: Exception) { Pair("OFFLINE", "--") }
-    }
-
-    fun auditCount(): Int {
-        val raw = get("$baseUrl/audit")
-        return try {
-            JSONObject(raw).optJSONArray("judicial")?.length() ?: 0
-        } catch (e: Exception) { 0 }
-    }
-
-    fun chat(prompt: String): Pair<String, String> {
-        // 1. Try local Ollama first
-        val body = """{"model":"deepseek-coder:1.3b","prompt":"$prompt","stream":false}"""
-        val resp = post("$ollamaUrl/api/generate", body)
-        return try {
-            val j = JSONObject(resp)
-            val r = j.optString("response", "")
-            if (r.isNotEmpty()) Pair(r, "ollama:local")
-            else tryRailway(prompt)
-        } catch (e: Exception) { tryRailway(prompt) }
-    }
-
-    private fun tryRailway(prompt: String): Pair<String, String> {
-        if (railwayUrl.isEmpty()) return Pair(
-            "Ollama offline. Set railwayUrl or run: bash ~/charlie2/ollama_start.sh",
-            "offline"
-        )
-        val body = """{"prompt":"$prompt"}"""
-        val resp = post("$railwayUrl/infer", body)
-        return try {
-            Pair(JSONObject(resp).optString("result", "No response"), "railway:cloud")
-        } catch (e: Exception) {
-            Pair("All providers offline.", "offline")
-        }
-    }
-}
+enum class Screen { CHAT, SETTINGS, AUDIT }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { Charlie2Screen() } }
+        setContent { MaterialTheme { Charlie2App() } }
+    }
+}
+
+@Composable
+fun Charlie2App() {
+    var screen by remember { mutableStateOf(Screen.CHAT) }
+    when (screen) {
+        Screen.SETTINGS -> SettingsScreen(onBack = { screen = Screen.CHAT })
+        Screen.AUDIT    -> AuditScreen(onBack = { screen = Screen.CHAT })
+        Screen.CHAT     -> ChatScreen(
+            onSettings = { screen = Screen.SETTINGS },
+            onAudit    = { screen = Screen.AUDIT }
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Charlie2Screen() {
+fun ChatScreen(onSettings: () -> Unit, onAudit: () -> Unit) {
     val messages  = remember { mutableStateListOf<ChatMessage>() }
     var input     by remember { mutableStateOf("") }
     var status    by remember { mutableStateOf("connecting...") }
@@ -157,21 +103,36 @@ fun Charlie2Screen() {
             Box(
                 Modifier.fillMaxWidth()
                     .background(C2Colors.BgCard)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        Modifier.size(9.dp).clip(RoundedCornerShape(50))
-                            .background(if (status == "OK") C2Colors.Green else C2Colors.Red)
+                        Modifier.size(9.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                if (status == "OK") C2Colors.Green else C2Colors.Red)
                     )
                     Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text("⚡ CHARLIE 2.0",
-                            color = C2Colors.Cyan, fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp, fontFamily = FontFamily.Monospace)
-                        Text("$status · $memUsed · $audits audits · $provider",
-                            color = C2Colors.Muted, fontSize = 10.sp,
+                    Column(Modifier.weight(1f)) {
+                        Text("CHARLIE 2.0",
+                            color = C2Colors.Cyan,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
                             fontFamily = FontFamily.Monospace)
+                        Text("$status · $memUsed · $provider",
+                            color = C2Colors.Muted,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace)
+                    }
+                    TextButton(onClick = onAudit) {
+                        Text("$audits audits",
+                            color = C2Colors.Yellow,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace)
+                    }
+                    IconButton(onClick = onSettings) {
+                        Icon(Icons.Default.Settings, "Settings",
+                            tint = C2Colors.Muted)
                     }
                 }
             }
@@ -184,20 +145,24 @@ fun Charlie2Screen() {
             ) {
                 if (messages.isEmpty()) {
                     item {
-                        Box(Modifier.fillMaxWidth().padding(top = 60.dp),
-                            contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier.fillMaxWidth().padding(top = 60.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("⚡", fontSize = 52.sp)
                                 Spacer(Modifier.height(10.dp))
                                 Text("Charlie 2.0",
-                                    color = C2Colors.Cyan, fontSize = 22.sp,
+                                    color = C2Colors.Cyan,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(4.dp))
                                 Text("Sovereign AI · RightsFrames Intelligence",
                                     color = C2Colors.Muted, fontSize = 12.sp)
                                 Spacer(Modifier.height(4.dp))
-                                Text("Tri-Branch Governance · Local AI · Tor",
-                                    color = C2Colors.Muted, fontSize = 10.sp,
+                                Text("Tri-Branch · Local AI · Tor · Cloud",
+                                    color = C2Colors.Muted,
+                                    fontSize = 10.sp,
                                     fontFamily = FontFamily.Monospace)
                             }
                         }
@@ -206,15 +171,21 @@ fun Charlie2Screen() {
                 items(messages) { msg -> MessageBubble(msg) }
                 if (loading) {
                     item {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Row(verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 CircularProgressIndicator(
                                     color = C2Colors.Cyan,
                                     modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp)
-                                Text("Charlie 2.0 thinking...",
-                                    color = C2Colors.Muted, fontSize = 11.sp,
+                                Text("thinking...",
+                                    color = C2Colors.Muted,
+                                    fontSize = 11.sp,
                                     fontFamily = FontFamily.Monospace)
                             }
                         }
@@ -222,7 +193,7 @@ fun Charlie2Screen() {
                 }
             }
 
-            // Input
+            // Input bar
             Row(
                 Modifier.fillMaxWidth()
                     .background(C2Colors.BgCard)
@@ -234,21 +205,20 @@ fun Charlie2Screen() {
                     onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
                     placeholder = {
-                        Text("Ask Charlie 2.0...", color = C2Colors.Muted, fontSize = 13.sp)
+                        Text("Ask Charlie 2.0...",
+                            color = C2Colors.Muted, fontSize = 13.sp)
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor   = C2Colors.Cyan,
-                        unfocusedBorderColor = C2Colors.Border,
-                        focusedTextColor     = C2Colors.TextLight,
-                        unfocusedTextColor   = C2Colors.TextLight,
-                        cursorColor          = C2Colors.Cyan,
+                        focusedBorderColor      = C2Colors.Cyan,
+                        unfocusedBorderColor    = C2Colors.Border,
+                        focusedTextColor        = C2Colors.TextLight,
+                        unfocusedTextColor      = C2Colors.TextLight,
+                        cursorColor             = C2Colors.Cyan,
                         focusedContainerColor   = C2Colors.BgItem,
-                        unfocusedContainerColor = C2Colors.BgItem
-                    ),
+                        unfocusedContainerColor = C2Colors.BgItem),
                     shape = RoundedCornerShape(10.dp),
                     maxLines = 4,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
-                )
+                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp))
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
@@ -262,16 +232,20 @@ fun Charlie2Screen() {
                             provider = prov
                             messages.add(ChatMessage("charlie", resp, prov))
                             loading = false
-                            audits = withContext(Dispatchers.IO) { Charlie2Client.auditCount() }
+                            audits = withContext(Dispatchers.IO) {
+                                Charlie2Client.auditCount()
+                            }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = C2Colors.Cyan),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = C2Colors.Cyan),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.size(56.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send",
-                        tint = Color.Black, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Send, "Send",
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -291,7 +265,8 @@ fun MessageBubble(msg: ChatMessage) {
         ) {
             if (!isUser) {
                 Text("⚡ ${msg.provider}",
-                    color = C2Colors.Green, fontSize = 9.sp,
+                    color = C2Colors.Green,
+                    fontSize = 9.sp,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(start = 4.dp, bottom = 3.dp))
             }
@@ -304,13 +279,17 @@ fun MessageBubble(msg: ChatMessage) {
                         bottomEnd   = 12.dp))
                     .background(
                         if (isUser)
-                            Brush.linearGradient(listOf(Color(0xFF1A3A4A), Color(0xFF0D2233)))
+                            Brush.linearGradient(
+                                listOf(Color(0xFF1A3A4A), Color(0xFF0D2233)))
                         else
-                            Brush.linearGradient(listOf(C2Colors.BgCard, C2Colors.BgItem)))
+                            Brush.linearGradient(
+                                listOf(C2Colors.BgCard, C2Colors.BgItem)))
                     .padding(10.dp, 8.dp)
             ) {
-                Text(msg.content, color = C2Colors.TextLight,
-                    fontSize = 13.sp, lineHeight = 19.sp)
+                Text(msg.content,
+                    color = C2Colors.TextLight,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp)
             }
         }
     }

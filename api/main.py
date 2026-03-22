@@ -330,3 +330,60 @@ async def pf_outputs():
         return {"outputs": files, "directory": out_dir}
     except:
         return {"outputs": [], "directory": out_dir}
+
+# Constitutional AI Enforcement
+@app.post("/ai/constitutional-chat")
+async def constitutional_chat(payload: dict):
+    prompt   = payload.get("prompt", "")
+    provider = payload.get("provider", "auto")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+        mp_spec = importlib.util.spec_from_file_location("mp",
+            os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+        mp = importlib.util.module_from_spec(mp_spec)
+        mp_spec.loader.exec_module(mp)
+        result = mp.route(prompt, provider)
+        raw_response = result.get("response","")
+
+        ef_spec = importlib.util.spec_from_file_location("enforcer",
+            os.path.expanduser("~/charlie2/constitution/enforcer.py"))
+        ef = importlib.util.module_from_spec(ef_spec)
+        ef_spec.loader.exec_module(ef)
+        final, verdict, violations, seal = ef.enforce(prompt, raw_response, provider)
+
+        return {
+            "response": final,
+            "provider": result.get("provider",""),
+            "constitutional_verdict": verdict,
+            "violations": len(violations),
+            "seal": seal,
+            "routed_via": "constitutional-tri-branch"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/constitution")
+async def get_constitution():
+    try:
+        with open(os.path.expanduser("~/charlie2/constitution/constitution.json")) as f:
+            import json as _json2
+            return _json2.load(f)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/constitution/test")
+async def test_constitution(payload: dict):
+    prompt   = payload.get("prompt", "test")
+    response = payload.get("response", "test response")
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("enforcer",
+            os.path.expanduser("~/charlie2/constitution/enforcer.py"))
+        ef = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ef)
+        final, verdict, violations, seal = ef.enforce(prompt, response)
+        return {"verdict": verdict, "violations": len(violations),
+                "seal": seal, "response_preview": final[:200]}
+    except Exception as e:
+        return {"error": str(e)}

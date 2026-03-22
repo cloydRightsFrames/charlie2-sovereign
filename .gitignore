@@ -5,7 +5,9 @@ __pycache__/
 .env
 wireguard/
 models/
-llama.cpp/build/
-whisper.cpp/build/
+llama.cpp/
+whisper.cpp/
 node_modules/
-.termux/
+c2_*.sh
+tor_data/
+tor_service/hs_ed25519_secret_key

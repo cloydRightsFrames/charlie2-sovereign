@@ -1,0 +1,187 @@
+{
+  "timestamp": "2026-03-22 06:29:35",
+  "findings": [
+    {
+      "file": "selfimprove/self_improve.py",
+      "issues": [
+        "hardcoded host:port \u2014 consider config file",
+        "large file (420 lines) \u2014 consider splitting",
+        "3 TODO/FIXME items",
+        "low type hint coverage"
+      ],
+      "lines": 420,
+      "priority": "HIGH"
+    },
+    {
+      "file": "providers/multi_provider.py",
+      "issues": [
+        "bare except clauses \u2014 should catch specific exceptions",
+        "low documentation: 7 functions, 0 docstrings",
+        "low type hint coverage"
+      ],
+      "lines": 93,
+      "priority": "HIGH"
+    },
+    {
+      "file": "inference_router.py",
+      "issues": [
+        "hardcoded host:port \u2014 consider config file",
+        "low documentation: 5 functions, 0 docstrings"
+      ],
+      "lines": 40,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "agent/coding_agent.py",
+      "issues": [
+        "hardcoded host:port \u2014 consider config file",
+        "low type hint coverage"
+      ],
+      "lines": 216,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "promptforge/engine.py",
+      "issues": [
+        "hardcoded host:port \u2014 consider config file",
+        "low type hint coverage"
+      ],
+      "lines": 208,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "constitution/enforcer.py",
+      "issues": [
+        "bare except clauses \u2014 should catch specific exceptions",
+        "low type hint coverage"
+      ],
+      "lines": 184,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "governance.py",
+      "issues": [
+        "low documentation: 7 functions, 0 docstrings"
+      ],
+      "lines": 45,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "app/routers/cvrcc_confidence_engine.py",
+      "issues": [
+        "low documentation: 4 functions, 0 docstrings"
+      ],
+      "lines": 112,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "api/main.py",
+      "issues": [
+        "large file (567 lines) \u2014 consider splitting"
+      ],
+      "lines": 567,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "wireguard/pc_node_server.py",
+      "issues": [
+        "bare except clauses \u2014 should catch specific exceptions"
+      ],
+      "lines": 55,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "cloud_api/main.py",
+      "issues": [
+        "low type hint coverage"
+      ],
+      "lines": 138,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "memory/rag_engine.py",
+      "issues": [
+        "low type hint coverage"
+      ],
+      "lines": 178,
+      "priority": "MEDIUM"
+    },
+    {
+      "file": "debate/debate_engine.py",
+      "issues": [
+        "hardcoded host:port \u2014 consider config file"
+      ],
+      "lines": 170,
+      "priority": "MEDIUM"
+    }
+  ],
+  "api_analysis": {
+    "total_endpoints": 28,
+    "missing_recommended": [
+      "/ai/stream",
+      "/health/detailed",
+      "/metrics",
+      "/lora/status",
+      "/zkp/latest",
+      "/selfimprove/status",
+      "/backup",
+      "/ai/benchmark"
+    ],
+    "paths": [
+      "/",
+      "/health",
+      "/judicial",
+      "/legislative",
+      "/legislative/enact",
+      "/executive",
+      "/audit",
+      "/sensor",
+      "/ai/chat",
+      "/ai/providers",
+      "/memory/remember",
+      "/memory/recall",
+      "/memory/status",
+      "/ai/rag-chat",
+      "/agent/run",
+      "/agent/status",
+      "/agent/watch/start",
+      "/agent/watch/stop",
+      "/promptforge/review",
+      "/promptforge/full"
+    ]
+  },
+  "proposals": [
+    {
+      "type": "code_quality",
+      "priority": "HIGH",
+      "title": "Code Quality Improvements",
+      "content": "All providers offline.",
+      "files": [
+        "selfimprove/self_improve.py",
+        "providers/multi_provider.py",
+        "inference_router.py"
+      ],
+      "judicial_verdict": "APPROVED"
+    },
+    {
+      "type": "api_endpoint",
+      "priority": "MEDIUM",
+      "title": "Add missing endpoints: /ai/stream, /health/detailed, /metrics",
+      "content": "AI error: HTTPConnectionPool(host='127.0.0.1', port=8000): Read timed out. (read timeout=60)",
+      "endpoints": [
+        "/ai/stream",
+        "/health/detailed",
+        "/metrics"
+      ],
+      "judicial_verdict": "APPROVED"
+    },
+    {
+      "type": "self_evolution",
+      "priority": "CRITICAL",
+      "title": "Self-Evolution Proposal",
+      "content": "All providers offline.",
+      "judicial_verdict": "APPROVED"
+    }
+  ],
+  "audit_count": 353
+}

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>⚡ Charlie 2.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+:root {
+  --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --bg4:#2d333b;
+  --cyan:#00d4ff; --green:#3fb950; --yellow:#e3b341;
+  --red:#f85149; --purple:#a371f7; --blue:#58a6ff;
+  --text:#e6edf3; --muted:#8b949e; --border:#30363d;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;flex-direction:column;}
+
+/* Header */
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.header-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.header-title{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--cyan);}
+.header-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:4px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.provider-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;background:var(--bg3);color:var(--cyan);border:1px solid var(--border);}
+.nav-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace;}
+.nav-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.nav-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.08);}
+
+/* Views */
+.view{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.view.active{display:flex;}
+
+/* Chat */
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.messages::-webkit-scrollbar{width:4px;}
+.messages::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+.msg{display:flex;gap:10px;animation:fadein .2s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.user{flex-direction:row-reverse;}
+.msg-bubble{max-width:75%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6;word-break:break-word;}
+.msg.user .msg-bubble{background:linear-gradient(135deg,#1a3a4a,#0d2233);border-radius:14px 2px 14px 14px;color:var(--text);}
+.msg.charlie .msg-bubble{background:var(--bg2);border:1px solid var(--border);border-radius:2px 14px 14px 14px;color:var(--text);}
+.msg-meta{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-top:4px;}
+.msg.user .msg-meta{text-align:right;}
+.msg-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px;}
+.msg.user .msg-avatar{background:linear-gradient(135deg,var(--cyan),var(--purple));}
+.msg.charlie .msg-avatar{background:var(--bg3);border:1px solid var(--border);}
+.thinking{display:flex;gap:4px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:2px 14px 14px 14px;width:fit-content;}
+.thinking span{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:think .8s ease-in-out infinite;}
+.thinking span:nth-child(2){animation-delay:.15s;}
+.thinking span:nth-child(3){animation-delay:.3s;}
+@keyframes think{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* Input */
+.input-bar{background:var(--bg2);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;align-items:flex-end;flex-shrink:0;}
+.input-wrap{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;display:flex;align-items:flex-end;transition:border-color .2s;}
+.input-wrap:focus-within{border-color:var(--cyan);}
+#msg-input{background:none;border:none;outline:none;color:var(--text);font-size:14px;padding:10px 12px;width:100%;resize:none;font-family:'Inter',sans-serif;max-height:120px;line-height:1.5;}
+#msg-input::placeholder{color:var(--muted);}
+.send-btn{width:42px;height:42px;border-radius:10px;background:var(--cyan);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .2s;}
+.send-btn:hover{opacity:.85;}
+.send-btn:disabled{opacity:.4;cursor:not-allowed;}
+.send-btn svg{width:18px;height:18px;}
+
+/* Provider selector */
+.provider-row{display:flex;gap:6px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
+.provider-row::-webkit-scrollbar{display:none;}
+.pvdr-btn{padding:3px 10px;border-radius:20px;font-size:10px;font-family:'JetBrains Mono',monospace;border:1px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.pvdr-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.pvdr-btn.active{background:rgba(0,212,255,.12);border-color:var(--cyan);color:var(--cyan);}
+
+/* Status view */
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:16px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.stat-card:hover{border-color:var(--cyan);}
+.stat-label{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.stat-val{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--cyan);}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.svc-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg3);}
+.svc-row:last-child{border:none;}
+.svc-name{font-size:12px;font-family:'JetBrains Mono',monospace;}
+.badge{padding:2px 7px;border-radius:20px;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.badge.ok{background:#1a4731;color:var(--green);border:1px solid #2ea04320;}
+.badge.down{background:#3d1a1a;color:var(--red);border:1px solid #f8514920;}
+.badge.warn{background:#3d2e0a;color:var(--yellow);}
+.status-scroll{flex:1;overflow-y:auto;padding:0 16px 16px;}
+
+/* Audit view */
+.audit-tabs{display:flex;gap:0;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.audit-tab{flex:1;padding:10px;text-align:center;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.audit-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.audit-list{flex:1;overflow-y:auto;padding:12px;}
+.audit-entry{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:6px;}
+.audit-branch{font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.audit-event{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);margin:3px 0;}
+.audit-hash{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--purple);}
+
+/* Memory view */
+.memory-form{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.mem-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;font-family:'JetBrains Mono',monospace;outline:none;}
+.mem-input:focus{border-color:var(--cyan);}
+.mem-btn{padding:8px 14px;background:var(--cyan);border:none;border-radius:8px;color:#000;font-weight:700;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace;}
+.mem-result{flex:1;overflow-y:auto;padding:12px;}
+.mem-entry{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:6px;}
+.mem-text{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);}
+.mem-src{font-size:9px;color:var(--muted);margin-top:3px;}
+
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted);}
+.empty-icon{font-size:40px;}
+.empty-text{font-size:12px;font-family:'JetBrains Mono',monospace;}
+
+.onion-box{background:var(--bg3);border:1px solid var(--purple);border-radius:8px;padding:10px;margin:12px 16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--purple);word-break:break-all;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-dot" id="hdot"></div>
+  <span class="header-title">⚡ CHARLIE 2.0</span>
+  <span class="header-sub" id="hstatus">connecting...</span>
+  <div class="header-right">
+    <span class="provider-badge" id="active-provider">ollama</span>
+    <button class="nav-btn active" onclick="showView('chat',this)">Chat</button>
+    <button class="nav-btn" onclick="showView('status',this)">Status</button>
+    <button class="nav-btn" onclick="showView('audit',this)">Audit</button>
+    <button class="nav-btn" onclick="showView('memory',this)">Memory</button>
+  </div>
+</div>
+
+<- Response CHAT VIEW -->
+<div class="view active" id="view-chat">
+  <div class="provider-row">
+    <button class="pvdr-btn active" onclick="setProvider('auto',this)">⚡ Auto</button>
+    <button class="pvdr-btn" onclick="setProvider('ollama',this)">🧠 Ollama</button>
+    <button class="pvdr-btn" onclick="setProvider('anthropic',this)">◆ Claude</button>
+    <button class="pvdr-btn" onclick="setProvider('openai',this)">◎ GPT</button>
+    <button class="pvdr-btn" onclick="setProvider('gemini',this)">✦ Gemini</button>
+  </div>
+  <div class="messages" id="messages">
+    <div class="empty-state" id="empty-chat">
+      <div class="empty-icon">⚡</div>
+      <div class="empty-text">Charlie 2.0 — Sovereign AI</div>
+      <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Tri-Branch · Local AI · Tor · Cloud</div>
+    </div>
+  </div>
+  <div class="input-bar">
+    <div class="input-wrap">
+      <textarea id="msg-input" rows="1" placeholder="Ask Charlie 2.0..."
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    </div>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<- Response STATUS VIEW -->
+<div class="view" id="view-status">
+  <div class="status-scroll">
+    <div class="status-grid" id="stat-grid"></div>
+    <div style="padding:0 0 8px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)">SERVICES</div>
+    <div id="svc-list"></div>
+    <div class="onion-box" id="onion-box">🌐 Tor: loading...</div>
+  </div>
+</div>
+
+<- Response AUDIT VIEW -->
+<div class="view" id="view-audit">
+  <div class="audit-tabs">
+    <div class="audit-tab active" onclick="setAuditTab(0,this)">
+      JUDICIAL<br><span id="jcount" style="font-size:14px;font-weight:700">0</span>
+    </div>
+    <div class="audit-tab" onclick="setAuditTab(1,this)">
+      LEGISLATIVE<br><span id="lcount" style="font-size:14px;font-weight:700">0</span>
+    </div>
+    <div class="audit-tab" onclick="setAuditTab(2,this)">
+      EXECUTIVE<br><span id="ecount" style="font-size:14px;font-weight:700">0</span>
+    </div>
+  </div>
+  <div class="audit-list" id="audit-list"></div>
+</div>
+
+<- Response MEMORY VIEW -->
+<div class="view" id="view-memory">
+  <div class="memory-form">
+    <input class="mem-input" id="mem-query" placeholder="Search memories..." onkeydown="if(event.key==='Enter')recallMemory()">
+    <button class="mem-btn" onclick="recallMemory()">RECALL</button>
+    <button class="mem-btn" style="background:var(--bg3);color:var(--cyan);border:1px solid var(--cyan)" onclick="rememberThis()">STORE</button>
+  </div>
+  <div style="padding:8px 16px;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted)" id="mem-stats">loading memory stats...</div>
+  <div class="mem-result" id="mem-result"></div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000'\;
+let currentProvider = 'auto';
+let auditData = {judicial:[], legislative:[], executive:[]};
+let auditTab = 0;
+let loading = false;
+
+async function get(url, ms=5000) {
+  try {
+    const c = new AbortController();
+    const t = setTimeout(()=>c.abort(), ms);
+    const r = await fetch(url, {signal:c.signal});
+    clearTimeout(t); return await r.json();
+  } catch { return null; }
+}
+
+async function post(url, body, ms=30000) {
+  try {
+    const c = new AbortController();
+    const t = setTimeout(()=>c.abort(), ms);
+    const r = await fetch(url, {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body), signal:c.signal});
+    clearTimeout(t); return await r.json();
+  } catch(e) { return {error: e.message}; }
+}
+
+function showView(name, btn) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(name==='status') loadStatus();
+  if(name==='audit') loadAudit();
+  if(name==='memory') loadMemoryStats();
+}
+
+function setProvider(p, btn) {
+  currentProvider = p;
+  document.querySelectorAll('.pvdr-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('active-provider').textContent = p;
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function addMessage(role, content, provider='') {
+  const empty = document.getElementById('empty-chat');
+  if(empty) empty.remove();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatarContent = role==='user' ? '👤' : '⚡';
+  div.innerHTML = `
+    <div class="msg-avatar">${avatarContent}</div>
+    <div>
+      <div class="msg-bubble">${content.replace(/\n/g,'<br>')}</div>
+      ${provider ? `<div class="msg-meta">⚡ ${provider}</div>` : ''}
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addThinking() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg charlie';
+  div.id = 'thinking';
+  div.innerHTML = `<div class="msg-avatar">⚡</div><div class="thinking"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendMessage() {
+  if(loading) return;
+  const input = document.getElementById('msg-input');
+  const prompt = input.value.trim();
+  if(!prompt) return;
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  loading = true;
+
+  addMessage('user', prompt);
+  addThinking();
+
+  const endpoint = currentProvider === 'auto' ? '/ai/rag-chat' : '/ai/chat';
+  const result = await post(API + endpoint,
+    {prompt, provider: currentProvider});
+
+  const t = document.getElementById('thinking');
+  if(t) t.remove();
+
+  if(result && result.response) {
+    const meta = result.provider || currentProvider;
+    const ctx = result.context_memories_used ? ` · ${result.context_memories_used} memories` : '';
+    addMessage('charlie', result.response, meta + ctx);
+    document.getElementById('active-provider').textContent = result.provider || currentProvider;
+  } else {
+    addMessage('charlie', result?.error || 'No response — check API', 'error');
+  }
+
+  loading = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+async function loadStatus() {
+  const h = await get(API+'/health');
+  const r = await get(API+'/ai/providers');
+  const cl = await get('http://127.0.0.1:8002/cluster-status');
+
+  const grid = document.getElementById('stat-grid');
+  if(h) {
+    grid.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Status</div><div class="stat-val" style="color:var(--green);font-size:13px">ONLINE</div><div class="stat-sub">${h.memory||'--'} RAM</div></div>
+      <div class="stat-card"><div class="stat-label">Load</div><div class="stat-val" style="font-size:14px">${(h.load||'--').split(',')[0]||'--'}</div><div class="stat-sub">1min avg</div></div>
+      <div class="stat-card"><div class="stat-label">Providers</div><div class="stat-val" style="font-size:14px">${r?.available?.length||1}</div><div class="stat-sub">${(r?.available||['ollama']).join(', ')}</div></div>
+      <div class="stat-card"><div class="stat-label">Routing</div><div class="stat-val" style="font-size:13px;color:var(--yellow)">${cl?.routing||'PHONE'}</div><div class="stat-sub">active node</div></div>`;
+  }
+
+  const svcs = [
+    ['FastAPI :8000', API+'/health'],
+    ['nginx :8080', 'http://127.0.0.1:8080/'\],
+    ['Ollama :11434', 'http://127.0.0.1:11434/api/tags'\],
+    ['Router :8002', 'http://127.0.0.1:8002/health'\],
+  ];
+  const list = document.getElementById('svc-list');
+  list.innerHTML = '';
+  for(const [name, url] of svcs) {
+    const ok = await (async()=>{try{const r=await fetch(url,{signal:AbortSignal.timeout(2000)});return r.ok;}catch{return false;}})();
+    list.innerHTML += `<div class="svc-row"><span class="svc-name">${name}</span><span class="badge ${ok?'ok':'down'}">${ok?'ONLINE':'OFFLINE'}</span></div>`;
+  }
+
+  const onion = document.getElementById('onion-box');
+  onion.textContent = '🌐 Tor: 2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion';
+}
+
+async function loadAudit() {
+  const d = await get(API+'/audit');
+  if(!d) return;
+  auditData.judicial    = d.judicial||[];
+  auditData.legislative = d.legislative||[];
+  auditData.executive   = d.executive||[];
+  document.getElementById('jcount').textContent = auditData.judicial.length;
+  document.getElementById('lcount').textContent = auditData.legislative.length;
+  document.getElementById('ecount').textContent = auditData.executive.length;
+  renderAuditTab();
+}
+
+function setAuditTab(i, btn) {
+  auditTab = i;
+  document.querySelectorAll('.audit-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAuditTab();
+}
+
+function renderAuditTab() {
+  const keys = ['judicial','legislative','executive'];
+  const colors = ['var(--red)','var(--yellow)','var(--cyan)'];
+  const entries = auditData[keys[auditTab]]||[];
+  const list = document.getElementById('audit-list');
+  if(!entries.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚖️</div><div class="empty-text">No records yet</div></div>';
+    return;
+  }
+  list.innerHTML = entries.map(e=>{
+    const event = e.event||e.policy||e.action||'--';
+    const verdict = e.verdict||e.status||'OK';
+    const vcolor = verdict==='APPROVED'||verdict==='ACTIVE'||verdict==='SUCCESS' ?
+      'var(--green)' : 'var(--red)';
+    return `<div class="audit-entry">
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="audit-branch" style="color:${colors[auditTab]}">${keys[auditTab].toUpperCase()}</span>
+        <span style="font-size:9px;font-family:'JetBrains Mono',monospace;color:${vcolor}">${verdict}</span>
+      </div>
+      <div class="audit-event">${event.slice(0,60)}</div>
+      <div class="audit-hash">[${(e.hash||'').slice(0,12)}]</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadMemoryStats() {
+  const d = await get(API+'/memory/status');
+  const el = document.getElementById('mem-stats');
+  if(d && !d.error) {
+    el.textContent = `memory: ${d.memory||0}  governance: ${d.governance||0}  codebase: ${d.codebase||0}  total: ${d.total||0}`;
+  } else {
+    el.textContent = 'memory system loading...';
+  }
+}
+
+async function recallMemory() {
+  const q = document.getElementById('mem-query').value.trim();
+  if(!q) return;
+  const result = document.getElementById('mem-result');
+  result.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">searching...</div></div>';
+  const d = await post(API+'/memory/recall', {query:q, n:8});
+  if(dig example.com +short || d.error) {
+    result.innerHTML = `<div class="empty-state"><div class="empty-text">Error: ${d?.error||'failed'}</div></div>`;
+    return;
+  }
+  if(!d.results?.length) {
+    result.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No memories found</div></div>';
+    return;
+  }
+  result.innerHTML = d.results.map(r=>`
+    <div class="mem-entry">
+      <div class="mem-text">${r.text.slice(0,200)}</div>
+      <div class="mem-src">source: ${r.meta?.source||'?'} · ${r.meta?.file?.split('/').pop()||''}</div>
+    </div>`).join('');
+}
+
+async function rememberThis() {
+  const text = document.getElementById('mem-query').value.trim();
+  if(!text) { alert('Enter text to remember'); return; }
+  const d = await post(API+'/memory/remember', {text, metadata:{source:'webui'}});
+  if(d?.stored) {
+    document.getElementById('mem-result').innerHTML =
+      `<div class="mem-entry"><div class="mem-text">✓ Stored: ${text.slice(0,80)}</div><div class="mem-src">id: ${d.id}</div></div>`;
+    loadMemoryStats();
+  }
+}
+
+async function pollStatus() {
+  const h = await get(API+'/health', 3000);
+  const dot = document.getElementById('hdot');
+  const sub = document.getElementById('hstatus');
+  if(h) {
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow = '0 0 6px var(--green)';
+    sub.textContent = `${h.memory||'--'} · OK`;
+  } else {
+    dot.style.background = 'var(--red)';
+    dot.style.boxShadow = '0 0 6px var(--red)';
+    sub.textContent = 'offline';
+  }
+}
+
+setInterval(pollStatus, 8000);
+pollStatus();
+</script>
+</body>
+</html>

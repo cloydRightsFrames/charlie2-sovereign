@@ -98,3 +98,235 @@ async def sensor_data():
             return _json.load(f)
     except:
         return {"error": "sensor feed not active"}
+
+# Multi-Provider AI Endpoint
+@app.post("/ai/chat")
+async def ai_chat(payload: dict):
+    prompt = payload.get("prompt", "")
+    preferred = payload.get("provider", "auto")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mp",
+            os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+        mp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mp)
+        return mp.route(prompt, preferred)
+    except Exception as e:
+        return {"error": str(e), "provider": "none"}
+
+@app.get("/ai/providers")
+async def ai_providers():
+    available = ["ollama"]
+    try:
+        with open(os.path.expanduser("~/charlie2/providers/keys.env")) as f:
+            content = f.read()
+        for name, key in [("anthropic","ANTHROPIC_API_KEY"),
+                          ("openai","OPENAI_API_KEY"),
+                          ("gemini","GEMINI_API_KEY")]:
+            if key in content:
+                val = content.split(key+"=")[1].split("\n")[0].strip()
+                if val and "your_" not in val:
+                    available.append(name)
+    except: pass
+    return {"available": available, "routing": "judicial-governed"}
+
+# RAG Memory Endpoints
+@app.post("/memory/remember")
+async def memory_remember(payload: dict):
+    text = payload.get("text", "")
+    meta = payload.get("metadata", {})
+    if not text: return {"error": "text required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rag",
+            os.path.expanduser("~/charlie2/memory/rag_engine.py"))
+        rag = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rag)
+        doc_id = rag.remember(text, meta)
+        return {"stored": True, "id": doc_id, "text": text[:80]}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/memory/recall")
+async def memory_recall(payload: dict):
+    query = payload.get("query", "")
+    n = payload.get("n", 5)
+    if not query: return {"error": "query required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rag",
+            os.path.expanduser("~/charlie2/memory/rag_engine.py"))
+        rag = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rag)
+        results = rag.recall(query, n=n)
+        return {"query": query, "results": results, "count": len(results)}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/memory/status")
+async def memory_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rag",
+            os.path.expanduser("~/charlie2/memory/rag_engine.py"))
+        rag = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rag)
+        mem  = rag.get_collection("charlie2_memory").count()
+        gov  = rag.get_collection("governance").count()
+        code = rag.get_collection("codebase").count()
+        return {"memory": mem, "governance": gov,
+                "codebase": code, "total": mem+gov+code}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/ai/rag-chat")
+async def rag_chat_endpoint(payload: dict):
+    prompt = payload.get("prompt", "")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rag",
+            os.path.expanduser("~/charlie2/memory/rag_engine.py"))
+        rag = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rag)
+        enhanced_prompt, ctx_count = rag.rag_chat(prompt)
+        mp_spec = importlib.util.spec_from_file_location("mp",
+            os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+        mp = importlib.util.module_from_spec(mp_spec)
+        mp_spec.loader.exec_module(mp)
+        result = mp.route(enhanced_prompt)
+        result["context_memories_used"] = ctx_count
+        result["rag_enhanced"] = True
+        rag.remember(f"Q: {prompt} A: {result['response'][:200]}",
+            {"source": "conversation", "provider": result.get("provider","")})
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+# Web UI Route
+@app.get("/ui", include_in_schema=False)
+async def webui():
+    return FileResponse(os.path.expanduser("~/charlie2/webui/index.html"))
+
+@app.get("/ui/{path:path}", include_in_schema=False)
+async def webui_path(path: str):
+    return FileResponse(os.path.expanduser("~/charlie2/webui/index.html"))
+
+# Auto-Commit Agent Endpoints
+import subprocess as _sub
+
+@app.post("/agent/run")
+async def agent_run(payload: dict = {}):
+    dry = payload.get("dry_run", False)
+    push = payload.get("push", False)
+    try:
+        args = ["python",
+            os.path.expanduser("~/charlie2/agent/coding_agent.py"),
+            "dry" if dry else "run"]
+        if push: args.append("--push")
+        result = _sub.run(args, capture_output=True, text=True, timeout=60)
+        return {"output": result.stdout, "error": result.stderr,
+                "code": result.returncode}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/agent/status")
+async def agent_status():
+    try:
+        result = _sub.run(
+            ["python", os.path.expanduser("~/charlie2/agent/coding_agent.py"),
+             "status"],
+            capture_output=True, text=True, timeout=15)
+        running = bool(_sub.run(["pgrep","-f","coding_agent.py watch"],
+            capture_output=True).stdout.strip())
+        return {"output": result.stdout, "watch_running": running}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/agent/watch/start")
+async def agent_watch_start():
+    try:
+        running = bool(_sub.run(["pgrep","-f","coding_agent.py watch"],
+            capture_output=True).stdout.strip())
+        if running:
+            return {"status": "already running"}
+        _sub.Popen(
+            ["nohup","python",
+             os.path.expanduser("~/charlie2/agent/coding_agent.py"),
+             "watch","--push"],
+            stdout=open(os.path.expanduser("~/charlie2/logs/agent.log"),"a"),
+            stderr=_sub.STDOUT)
+        return {"status": "started", "log": "~/charlie2/logs/agent.log"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/agent/watch/stop")
+async def agent_watch_stop():
+    try:
+        _sub.run(["pkill","-f","coding_agent.py watch"], capture_output=True)
+        return {"status": "stopped"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# PromptForge Endpoints
+@app.post("/promptforge/review")
+async def pf_review(payload: dict):
+    target = payload.get("target", "")
+    provider = payload.get("provider", "auto")
+    phases = payload.get("phases", [1, 2, 4, 11])
+    if not target: return {"error": "target required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pf",
+            os.path.expanduser("~/charlie2/promptforge/engine.py"))
+        pf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pf)
+        results, report = pf.run_pipeline(target, provider, phases)
+        return {"phases_run": len(results), "report": report[:3000],
+                "results": [{"phase":r["phase"],"name":r["name"],
+                             "summary":r["response"][:200]} for r in results]}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/promptforge/full")
+async def pf_full(payload: dict):
+    target = payload.get("target", "")
+    provider = payload.get("provider", "auto")
+    if not target: return {"error": "target required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pf",
+            os.path.expanduser("~/charlie2/promptforge/engine.py"))
+        pf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pf)
+        results, report = pf.run_pipeline(target, provider)
+        return {"phases_run": len(results), "report_preview": report[:2000],
+                "saved_to": "~/charlie2/promptforge/outputs/"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/promptforge/self-review")
+async def pf_self():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pf",
+            os.path.expanduser("~/charlie2/promptforge/engine.py"))
+        pf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pf)
+        api_path = os.path.expanduser("~/charlie2/api/main.py")
+        results, report = pf.quick_review(api_path)
+        return {"phases_run": len(results),
+                "verdict": results[-1]["response"][:300] if results else "no result",
+                "report_preview": report[:1500]}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/promptforge/outputs")
+async def pf_outputs():
+    out_dir = os.path.expanduser("~/charlie2/promptforge/outputs")
+    try:
+        files = sorted(os.listdir(out_dir), reverse=True)[:10]
+        return {"outputs": files, "directory": out_dir}
+    except:
+        return {"outputs": [], "directory": out_dir}

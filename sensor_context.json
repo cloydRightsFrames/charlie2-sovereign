@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-03-22T09:40:28Z",
+  "battery": {"status": "unknown", "percentage": 0},
+  "memory": {"used": "2.2Gi", "total": "3.4Gi"},
+  "load_average": "15.14, 15.46, 16.91",
+  "uptime": "up 1 day, 17 hours, 2 minutes",
+  "processes": 42
+}

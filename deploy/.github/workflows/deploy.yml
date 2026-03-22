@@ -1,0 +1,36 @@
+name: Charlie 2.0 — Cloud Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install fastapi uvicorn requests
+      - name: Test API import
+        run: python -c "from cloud_api.main import app; print('✓ Charlie 2.0 Cloud API OK')"
+      - name: Test health endpoint
+        run: |
+          python -m uvicorn cloud_api.main:app --host 0.0.0.0 --port 8000 &
+          sleep 3
+          curl -sf http://localhost:8000/health | python -c "import sys,json; d=json.load(sys.stdin); print('✓ Health:', d['status'])"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy to Railway
+        run: railway up --service charlie2-api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

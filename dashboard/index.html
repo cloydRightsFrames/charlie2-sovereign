@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚡ Charlie 2.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap');
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--cyan:#00d4ff;--green:#3fb950;--yellow:#e3b341;--red:#f85149;--purple:#a371f7;--text:#e6edf3;--muted:#8b949e;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;}
+.topbar{background:var(--bg2);border-bottom:1px solid #30363d;padding:14px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.topbar h1{font-size:1.1rem;font-weight:700;color:var(--cyan);letter-spacing:.06em;}
+.ts{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);}
+.rbar{height:2px;background:var(--bg3);position:fixed;top:0;left:0;right:0;z-index:200;}
+.rfill{height:100%;background:var(--cyan);transition:width .1s linear;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;padding:16px;}
+.card{background:var(--bg2);border:1px solid #30363d;border-radius:10px;padding:14px;transition:border-color .2s;}
+.card:hover{border-color:var(--cyan);}
+.ct{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.stat{font-size:1.9rem;font-weight:700;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.sl{font-size:.75rem;color:var(--muted);margin-top:3px;}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #21262d;}
+.srow:last-child{border-bottom:none;}
+.sn{font-size:.82rem;font-family:'JetBrains Mono',monospace;}
+.badge{padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.online{background:#1a4731;color:var(--green);border:1px solid #2ea04326;}
+.offline{background:#3d1a1a;color:var(--red);border:1px solid #f8514926;}
+.warn{background:#3d2e0a;color:var(--yellow);border:1px solid #e3b34126;}
+.meter{background:var(--bg3);border-radius:99px;height:7px;overflow:hidden;margin-top:7px;}
+.mf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width 1s ease;}
+.mfw{background:linear-gradient(90deg,var(--yellow),var(--red));}
+.chain{background:var(--bg3);border-radius:7px;padding:7px 9px;margin-bottom:5px;font-size:.72rem;font-family:'JetBrains Mono',monospace;}
+.onion{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--purple);word-break:break-all;background:var(--bg3);padding:7px;border-radius:6px;margin-top:7px;}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;}
+.si{background:var(--bg3);border-radius:7px;padding:7px;}
+.sv{font-size:1rem;font-weight:700;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.sk{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.node{background:var(--bg3);border-radius:7px;padding:9px;margin-bottom:7px;}
+.nn{font-size:.78rem;font-weight:600;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.nl{font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.counts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px;}
+.citem{text-align:center;}
+.cnum{font-size:1.3rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.clbl{font-size:.62rem;color:var(--muted);}
+.vbtn{background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;color:#000;padding:9px 18px;border-radius:7px;font-weight:700;font-size:.82rem;cursor:pointer;width:100%;margin-top:9px;font-family:'Space Grotesk',sans-serif;}
+.vout{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text);min-height:44px;background:var(--bg3);padding:8px;border-radius:6px;margin-bottom:8px;word-break:break-word;}
+</style>
+</head>
+<body>
+<div class="rbar"><div class="rfill" id="rf" style="width:0%"></div></div>
+<div class="topbar">
+  <div class="dot" id="mdot"></div>
+  <h1>⚡ CHARLIE 2.0 — SOVEREIGN STACK</h1>
+  <span class="ts" id="clk"></span>
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="ct">🖥️ Services</div>
+    <div class="srow"><span class="sn">FastAPI :8000</span><span class="badge" id="b-api">...</span></div>
+    <div class="srow"><span class="sn">nginx :8080</span><span class="badge" id="b-nginx">...</span></div>
+    <div class="srow"><span class="sn">Ollama :11434</span><span class="badge" id="b-ollama">...</span></div>
+    <div class="srow"><span class="sn">Router :8002</span><span class="badge" id="b-router">...</span></div>
+    <div class="srow"><span class="sn">SSHD :8022</span><span class="badge" id="b-ssh">...</span></div>
+    <div class="srow"><span class="sn">Redis :6379</span><span class="badge" id="b-redis">...</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📊 Resources</div>
+    <div class="stat" id="ram">--</div>
+    <div class="sl">RAM Used / Total</div>
+    <div class="meter"><div class="mf" id="rmeter" style="width:0%"></div></div>
+    <div style="margin-top:11px">
+      <div class="sl">Load Average</div>
+      <div style="font-family:'JetBrains Mono',monospace;color:var(--yellow);font-size:1rem;margin-top:3px" id="load">--</div>
+    </div>
+    <div style="margin-top:11px">
+      <div class="sl">Platform · Uptime</div>
+      <div style="font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:.72rem;margin-top:3px" id="platf">--</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">⚖️ Governance Chain</div>
+    <div class="counts">
+      <div class="citem"><div class="cnum" id="jc" style="color:var(--red)">0</div><div class="clbl">JUDICIAL</div></div>
+      <div class="citem"><div class="cnum" id="lc" style="color:var(--yellow)">0</div><div class="clbl">LEGISLATIVE</div></div>
+      <div class="citem"><div class="cnum" id="ec" style="color:var(--cyan)">0</div><div class="clbl">EXECUTIVE</div></div>
+    </div>
+    <div id="clog"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🔗 Inference Cluster</div>
+    <div class="node">
+      <div class="nn">📱 ARM64 — Termux Phone</div>
+      <div class="nl" id="ph-load">-- load</div>
+      <div class="sl" id="ph-st">checking...</div>
+    </div>
+    <div style="text-align:center;color:var(--yellow);font-size:1.3rem;margin:3px 0" id="rarrow">⇅</div>
+    <div class="node">
+      <div class="nn">💻 x86_64 — Windows PC</div>
+      <div class="nl" id="pc-load">--</div>
+      <div class="sl" id="pc-st">checking...</div>
+    </div>
+    <div style="margin-top:7px;font-size:.73rem;color:var(--muted)">
+      Route: <span style="color:var(--yellow);font-weight:700;font-family:'JetBrains Mono',monospace" id="route">--</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🌐 Tor Hidden Service</div>
+    <span class="badge online">LIVE .onion</span>
+    <div class="onion" id="onion">loading...</div>
+    <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">
+      Globally reachable · No IP · No identity<br>
+      <span style="color:var(--green)">Sovereign.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📡 Sensor Feed</div>
+    <div class="sgrid">
+      <div class="si"><div class="sv" id="bat">--%</div><div class="sk">Battery</div></div>
+      <div class="si"><div class="sv" id="chg">--</div><div class="sk">Status</div></div>
+      <div class="si"><div class="sv" id="procs">--</div><div class="sk">Processes</div></div>
+      <div class="si"><div class="sv" id="upt">--</div><div class="sk">Uptime</div></div>
+    </div>
+    <div style="margin-top:7px;font-size:.68rem;color:var(--muted)" id="sts">last: --</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🧠 Local AI — Ollama</div>
+    <div id="models"><div style="color:var(--muted);font-size:.8rem">Checking Ollama...</div></div>
+    <div style="margin-top:10px">
+      <div class="sl">Last Response</div>
+      <div class="vout" id="oresp" style="margin-top:6px">Waiting...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🎙️ Voice Pipeline</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">
+      whisper.cpp → DeepSeek → TTS<br>
+      Full offline · no cloud required
+    </div>
+    <div class="vout" id="vout">Ready. Tap to query Charlie 2.0.</div>
+    <button class="vbtn" onclick="voiceQuery()">⚡ QUERY CHARLIE 2.0</button>
+  </div>
+
+</div>
+<script>
+const API='http://127.0.0.1:8000',ROUTER='http://127.0.0.1:8002',OLLAMA='http://127.0.0.1:11434';
+async function get(url,ms=3000){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);const r=await fetch(url,{signal:c.signal});clearTimeout(t);return await r.json();}catch{return null;}}
+async function chk(url,ms=2000){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);const r=await fetch(url,{signal:c.signal});clearTimeout(t);return r.ok;}catch{return false;}}
+function b(id,st,lbl){const e=document.getElementById(id);e.textContent=lbl;e.className='badge '+st;}
+async function services(){
+  const checks=[['b-api',API+'/health'],['b-nginx','http://127.0.0.1:8080/'],['b-ollama',OLLAMA+'/api/tags'],['b-router',ROUTER+'/health'],['b-ssh',null],['b-redis',null]];
+  for(const[id,url]of checks){if(!url){b(id,'warn','N/A');continue;}const ok=await chk(url);b(id,ok?'online':'offline',ok?'ONLINE':'OFFLINE');}
+}
+async function system(){
+  const d=await get(API+'/');
+  if(d){document.getElementById('platf').textContent=(d.platform||'')+'  '+(d.uptime||'');document.getElementById('mdot').style.background='#3fb950';}
+  const h=await get(API+'/health');
+  if(h){
+    document.getElementById('ram').textContent=h.memory||'--';
+    document.getElementById('load').textContent=h.load||'--';
+    const pts=(h.memory||'').split('/');
+    if(pts.length===2){const pct=parseFloat(pts[0])/parseFloat(pts[1])*100;const m=document.getElementById('rmeter');m.style.width=Math.min(pct,100)+'%';m.className=pct>80?'mf mfw':'mf';}
+  }
+}
+async function governance(){
+  const d=await get(API+'/audit');if(!d)return;
+  document.getElementById('jc').textContent=d.judicial?.length||0;
+  document.getElementById('lc').textContent=d.legislative?.length||0;
+  document.getElementById('ec').textContent=d.executive?.length||0;
+  document.getElementById('clog').innerHTML=(d.judicial||[]).slice(0,4).map(e=>`<div class="chain"><span style="color:var(--red);font-weight:700">JUD</span> <span style="color:${e.verdict==='APPROVED'?'var(--green)':'var(--red)'}">${e.verdict}</span> <span style="color:var(--muted)">${(e.event||'').slice(0,30)}</span> <span style="color:var(--purple)">[${(e.hash||'').slice(0,8)}]</span></div>`).join('');
+}
+async function cluster(){
+  const d=await get(ROUTER+'/cluster-status');if(!d){document.getElementById('ph-st').textContent='router offline';return;}
+  document.getElementById('ph-load').textContent=((d.phone?.load||0).toFixed(2))+' load';
+  document.getElementById('ph-st').textContent=d.phone?.status||'--';
+  document.getElementById('pc-load').textContent=d.pc?.status||'OFFLINE';
+  document.getElementById('pc-st').textContent='endpoint: '+(d.pc?.endpoint||'--');
+  document.getElementById('route').textContent=d.routing||'PHONE';
+  document.getElementById('rarrow').style.color=d.routing==='PC'?'#3fb950':'#e3b341';
+}
+async function sensor(){
+  try{const r=await fetch(API+'/sensor');const d=await r.json();if(d.battery){document.getElementById('bat').textContent=(d.battery.percentage||'--')+'%';document.getElementById('chg').textContent=d.battery.status||'--';}document.getElementById('procs').textContent=d.processes||'--';document.getElementById('upt').textContent=(d.uptime||'--').replace('up ','');document.getElementById('sts').textContent='last: '+new Date().toLocaleTimeString();}catch{}
+}
+async function ollama(){
+  const d=await get(OLLAMA+'/api/tags');const el=document.getElementById('models');
+  if(!d?.models){el.innerHTML='<div style="color:var(--yellow);font-size:.78rem">Ollama loading / model downloading...</div>';return;}
+  el.innerHTML=d.models.map(m=>`<div class="srow"><span class="sn" style="font-size:.78rem">${m.name}</span><span class="badge online">${((m.size||0)/1e9).toFixed(1)}GB</span></div>`).join('')||'<div style="color:var(--muted);font-size:.78rem">No models yet</div>';
+}
+async function voiceQuery(){
+  const btn=document.querySelector('.vbtn'),out=document.getElementById('vout');
+  btn.textContent='⏳ Querying...';btn.disabled=true;out.textContent='Sending to Ollama...';
+  try{
+    const r=await fetch(OLLAMA+'/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'deepseek-coder:1.3b',prompt:'You are Charlie 2.0 sovereign AI. Give one sentence status.',stream:false})});
+    const d=await r.json();
+    out.textContent=d?.response||'Run: bash ~/charlie2/voice/voice_pipeline.sh';
+    document.getElementById('oresp').textContent=d?.response||'--';
+  }catch{out.textContent='Run: bash ~/charlie2/voice/voice_pipeline.sh';}
+  btn.textContent='⚡ QUERY CHARLIE 2.0';btn.disabled=false;
+}
+document.getElementById('onion').textContent='2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion';
+let pct=0;
+function animBar(){pct=0;const t=setInterval(()=>{pct+=2;document.getElementById('rf').style.width=Math.min(pct,100)+'%';if(pct>=100){clearInterval(t);document.getElementById('rf').style.width='0%';}},100);}
+async function refresh(){await Promise.all([services(),system(),governance(),cluster(),sensor(),ollama()]);animBar();}
+setInterval(()=>document.getElementById('clk').textContent=new Date().toLocaleTimeString(),1000);
+setInterval(refresh,5000);
+refresh();
+</script>
+</body>
+</html>

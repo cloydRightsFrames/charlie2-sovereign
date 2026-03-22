@@ -1,0 +1,11 @@
+*.db
+*.pyc
+__pycache__/
+*.log
+.env
+wireguard/
+models/
+llama.cpp/build/
+whisper.cpp/build/
+node_modules/
+.termux/

@@ -483,3 +483,85 @@ async def supreme_chat(payload: dict):
         }
     except Exception as e:
         return {"error": str(e), "pipeline": "supreme-chat"}
+
+# Autonomous Self-Improvement Endpoints
+@app.post("/selfimprove/run")
+async def selfimprove_run(payload: dict = {}):
+    submit_pr = payload.get("submit_pr", False)
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("si",
+            os.path.expanduser("~/charlie2/selfimprove/self_improve.py"))
+        si = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(si)
+        result = si.run_cycle(submit_pr=submit_pr)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/selfimprove/watch/start")
+async def selfimprove_watch_start():
+    try:
+        import subprocess as _sub2
+        running = bool(_sub2.run(
+            ["pgrep","-f","self_improve.py watch"],
+            capture_output=True).stdout.strip())
+        if running:
+            return {"status": "already running"}
+        _sub2.Popen(
+            ["nohup","python",
+             os.path.expanduser("~/charlie2/selfimprove/self_improve.py"),
+             "watch"],
+            stdout=open(
+                os.path.expanduser("~/charlie2/logs/selfimprove.log"),"a"),
+            stderr=_sub2.STDOUT)
+        return {"status": "started", "interval": "6h",
+                "log": "~/charlie2/logs/selfimprove.log"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/selfimprove/status")
+async def selfimprove_status():
+    try:
+        import glob, json as _json5, subprocess as _sub3
+        runs = glob.glob(
+            os.path.expanduser("~/charlie2/selfimprove/history/*.json"))
+        proposals = glob.glob(
+            os.path.expanduser("~/charlie2/selfimprove/proposals/*.json"))
+        patches   = glob.glob(
+            os.path.expanduser("~/charlie2/selfimprove/patches/*.json"))
+        running   = bool(_sub3.run(
+            ["pgrep","-f","self_improve.py watch"],
+            capture_output=True).stdout.strip())
+        latest = {}
+        if runs:
+            with open(sorted(runs)[-1]) as f:
+                latest = _json5.load(f)
+        return {
+            "cycles_run":      len(runs),
+            "proposals_total": len(proposals),
+            "patches_written": len(patches),
+            "watch_running":   running,
+            "latest_cycle":    latest
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/selfimprove/proposals")
+async def selfimprove_proposals():
+    try:
+        import glob, json as _json6
+        files = sorted(glob.glob(
+            os.path.expanduser("~/charlie2/selfimprove/analysis/*.json")))
+        if not files:
+            return {"proposals": [], "message": "No cycles run yet"}
+        with open(files[-1]) as f:
+            data = _json6.load(f)
+        return {
+            "timestamp":  data.get("timestamp",""),
+            "proposals":  data.get("proposals",[]),
+            "findings":   len(data.get("findings",[])),
+            "audit_count": data.get("audit_count",0)
+        }
+    except Exception as e:
+        return {"error": str(e)}

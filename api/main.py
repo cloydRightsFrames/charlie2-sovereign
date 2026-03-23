@@ -1103,3 +1103,69 @@ async def posi_status():
         }
     except Exception as e:
         return {"error": str(e)}
+
+# NPU/GPU Inference Endpoints
+@app.get("/npu/status")
+async def npu_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("npu",
+            os.path.expanduser("~/charlie2/npu/npu_engine.py"))
+        npu = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(npu)
+        return npu.get_status()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/npu/benchmark")
+async def npu_benchmark():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("npu",
+            os.path.expanduser("~/charlie2/npu/npu_engine.py"))
+        npu = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(npu)
+        return npu.run_full_benchmark()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/npu/similarity")
+async def npu_similarity(payload: dict):
+    a = payload.get("a","")
+    b = payload.get("b","")
+    if not a or not b: return {"error": "a and b required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("npu",
+            os.path.expanduser("~/charlie2/npu/npu_engine.py"))
+        npu = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(npu)
+        return npu.accelerated_similarity(a, b)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/npu/tokenize")
+async def npu_tokenize(payload: dict):
+    text = payload.get("text","")
+    if not text: return {"error": "text required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("npu",
+            os.path.expanduser("~/charlie2/npu/npu_engine.py"))
+        npu = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(npu)
+        return npu.accelerated_tokenize(text)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/npu/hardware")
+async def npu_hardware():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("npu",
+            os.path.expanduser("~/charlie2/npu/npu_engine.py"))
+        npu = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(npu)
+        return npu.detect_hardware()
+    except Exception as e:
+        return {"error": str(e)}

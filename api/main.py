@@ -1169,3 +1169,104 @@ async def npu_hardware():
         return npu.detect_hardware()
     except Exception as e:
         return {"error": str(e)}
+
+# Biometric Judicial Gate Endpoints
+@app.post("/biometric/gate")
+async def biometric_gate(payload: dict):
+    action = payload.get("action","")
+    if not action: return {"error": "action required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bio",
+            os.path.expanduser("~/charlie2/biometric/biometric_gate.py"))
+        bio = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bio)
+        return bio.biometric_gate(action)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/biometric/assess")
+async def biometric_assess(payload: dict):
+    action = payload.get("action","")
+    if not action: return {"error": "action required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bio",
+            os.path.expanduser("~/charlie2/biometric/biometric_gate.py"))
+        bio = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bio)
+        threat, trigger = bio.assess_threat(action)
+        return {
+            "action":  action,
+            "threat":  threat,
+            "trigger": trigger or "none",
+            "requires_biometric": threat in ["HIGH","CRITICAL"],
+            "requires_debate":    threat == "CRITICAL"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/biometric/status")
+async def biometric_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bio",
+            os.path.expanduser("~/charlie2/biometric/biometric_gate.py"))
+        bio = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bio)
+        return bio.get_status()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/biometric/history")
+async def biometric_history():
+    try:
+        import glob, json as _j
+        bio_dir = os.path.expanduser("~/charlie2/biometric/approvals")
+        files   = sorted(glob.glob(f"{bio_dir}/*.json"))[-20:]
+        records = []
+        for f in files:
+            with open(f) as fh: records.append(_j.load(fh))
+        return {
+            "total":   len(os.listdir(bio_dir)),
+            "recent":  records[-10:],
+            "approved": sum(1 for r in records if r.get("approved")),
+            "blocked":  sum(1 for r in records if not r.get("approved"))
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/ai/biometric-chat")
+async def biometric_chat(payload: dict):
+    """AI chat with biometric gate on high-threat prompts"""
+    prompt   = payload.get("prompt","")
+    provider = payload.get("provider","auto")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bio",
+            os.path.expanduser("~/charlie2/biometric/biometric_gate.py"))
+        bio = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bio)
+        gate_result = bio.biometric_gate(prompt)
+        if not gate_result.get("approved"):
+            return {
+                "response":  "⚖️ Biometric Judicial Gate: Action BLOCKED",
+                "approved":  False,
+                "threat":    gate_result.get("threat",""),
+                "method":    gate_result.get("method",""),
+                "bio_hash":  gate_result.get("bio_hash","")
+            }
+        import importlib.util as _ilu2
+        mp_spec = _ilu2.spec_from_file_location("mp",
+            os.path.expanduser("~/charlie2/providers/multi_provider.py"))
+        mp = _ilu2.module_from_spec(mp_spec)
+        mp_spec.loader.exec_module(mp)
+        result = mp.route(prompt, provider)
+        result["approved"]  = True
+        result["threat"]    = gate_result.get("threat","LOW")
+        result["bio_hash"]  = gate_result.get("bio_hash","")
+        result["bio_method"] = gate_result.get("method","auto")
+        return result
+    except Exception as e:
+        return {"error": str(e)}

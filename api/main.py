@@ -855,3 +855,90 @@ async def mesh_broadcast():
         return {"status": "broadcast sent", "node_id": m.NODE_ID}
     except Exception as e:
         return {"error": str(e)}
+
+# Living Constitutional AI Endpoints
+@app.post("/constitution/evolve")
+async def constitution_evolve():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("lc",
+            os.path.expanduser("~/charlie2/living_constitution/living_engine.py"))
+        lc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lc)
+        results = lc.run_evolution_cycle()
+        return {
+            "amendments_enacted": len(results),
+            "amendments": results,
+            "version": lc.load_constitution().get("version","?"),
+            "system": "Living Constitutional AI"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/constitution/living/status")
+async def constitution_living_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("lc",
+            os.path.expanduser("~/charlie2/living_constitution/living_engine.py"))
+        lc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lc)
+        return lc.get_status()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/constitution/living/history")
+async def constitution_living_history():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("lc",
+            os.path.expanduser("~/charlie2/living_constitution/living_engine.py"))
+        lc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lc)
+        history = lc.load_history()
+        return {
+            "total_amendments": len(history),
+            "history": history[-20:],
+            "constitution_version": lc.load_constitution().get("version","?")
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/constitution/living/articles")
+async def constitution_living_articles():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("lc",
+            os.path.expanduser("~/charlie2/living_constitution/living_engine.py"))
+        lc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lc)
+        const = lc.load_constitution()
+        return {
+            "version":  const.get("version","1.0"),
+            "articles": const.get("articles",[]),
+            "is_living": True
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/constitution/living/schedule")
+async def constitution_schedule():
+    try:
+        import subprocess as _sub
+        running = bool(_sub.run(
+            ["pgrep","-f","living_engine.py"],
+            capture_output=True).stdout.strip())
+        if running:
+            return {"status": "already scheduled"}
+        _sub.Popen(
+            ["nohup","python","-c",
+             "import time,sys; sys.path.insert(0,''); "
+             "exec(open('/data/data/com.termux/files/home/charlie2/living_constitution/living_engine.py').read()); "
+             "[(__import__('time').sleep(21600), run_evolution_cycle()) for _ in iter(int, 1)]"],
+            stdout=open(os.path.expanduser(
+                "~/charlie2/logs/living_const.log"),"a"),
+            stderr=_sub.STDOUT)
+        return {"status": "scheduled every 6h",
+                "log": "~/charlie2/logs/living_const.log"}
+    except Exception as e:
+        return {"error": str(e)}

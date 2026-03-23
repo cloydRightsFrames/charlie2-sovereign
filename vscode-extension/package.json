@@ -1,0 +1,185 @@
+{
+  "name": "charlie2-sovereign",
+  "displayName": "⚡ Charlie 2.0 — Sovereign AI",
+  "description": "RightsFrames Intelligence — Sovereign AI Copilot with tri-branch governance, constitutional enforcement, and multi-provider routing",
+  "version": "2.0.0",
+  "publisher": "cloydRightsFrames",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "copilot",
+    "sovereign",
+    "governance",
+    "charlie2",
+    "rightsframes"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "charlie2.askSelection",
+        "title": "⚡ Ask Charlie 2.0",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.explainCode",
+        "title": "⚡ Explain This Code",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.fixCode",
+        "title": "⚡ Fix This Code",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.generateCode",
+        "title": "⚡ Generate Code",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.reviewCode",
+        "title": "⚡ Constitutional Review",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.debateCode",
+        "title": "⚡ Debate This Code",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.auditChain",
+        "title": "⚡ View Governance Chain",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.openChat",
+        "title": "⚡ Open Charlie 2.0 Chat",
+        "category": "Charlie 2.0"
+      },
+      {
+        "command": "charlie2.zkpProve",
+        "title": "⚡ Generate ZK Proof",
+        "category": "Charlie 2.0"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "charlie2.askSelection",
+          "when": "editorHasSelection",
+          "group": "charlie2@1"
+        },
+        {
+          "command": "charlie2.explainCode",
+          "when": "editorHasSelection",
+          "group": "charlie2@2"
+        },
+        {
+          "command": "charlie2.fixCode",
+          "when": "editorHasSelection",
+          "group": "charlie2@3"
+        },
+        {
+          "command": "charlie2.reviewCode",
+          "when": "editorHasSelection",
+          "group": "charlie2@4"
+        },
+        {
+          "command": "charlie2.debateCode",
+          "when": "editorHasSelection",
+          "group": "charlie2@5"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "charlie2.askSelection",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "charlie2.fixCode",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "charlie2.openChat",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c"
+      }
+    ],
+    "configuration": {
+      "title": "Charlie 2.0",
+      "properties": {
+        "charlie2.apiUrl": {
+          "type": "string",
+          "default": "http://10.99.0.1:8000",
+          "description": "Charlie 2.0 API URL (WireGuard mesh: 10.99.0.1:8000)"
+        },
+        "charlie2.provider": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "ollama",
+            "anthropic",
+            "openai",
+            "gemini"
+          ],
+          "description": "Default AI provider"
+        },
+        "charlie2.useConstitutional": {
+          "type": "boolean",
+          "default": true,
+          "description": "Apply constitutional enforcement to all responses"
+        },
+        "charlie2.useDebate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run 3-agent debate council on responses"
+        },
+        "charlie2.useRag": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable RAG memory-enhanced responses"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "charlie2-sidebar",
+          "title": "Charlie 2.0",
+          "icon": "media/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "charlie2-sidebar": [
+        {
+          "type": "webview",
+          "id": "charlie2.chatView",
+          "name": "⚡ Charlie 2.0"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

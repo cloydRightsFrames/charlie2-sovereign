@@ -1,0 +1,43 @@
+{
+  "cid": "Qmf5d92b6416fb90829df0c5c015a9dff0c4e49c40d2c1",
+  "content": {
+    "system": "Charlie 2.0 Sovereign",
+    "owner": "cloydRightsFrames",
+    "merkle_root": "9672f066e90a6fe186e0df6814561693fb1461d68943d2b48d57edb9f62469b0",
+    "record_count": 1000,
+    "anchored_at": "2026-03-23 02:50:02 UTC",
+    "tor_onion": "2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion",
+    "sample_records": [
+      {
+        "event": "REQ:/health",
+        "verdict": "APPROVED",
+        "hash": "5f50b83d28d85d68",
+        "ts": 1774210024.7619572
+      },
+      {
+        "event": "REQ:/health",
+        "verdict": "APPROVED",
+        "hash": "4e391d6ab50d2fba",
+        "ts": 1774210098.3581522
+      },
+      {
+        "event": "REQ:/health",
+        "verdict": "APPROVED",
+        "hash": "3a0cff42c4010c84",
+        "ts": 1774210186.292921
+      },
+      {
+        "event": "REQ:/health",
+        "verdict": "APPROVED",
+        "hash": "ab334bab3bacbae7",
+        "ts": 1774210277.2116435
+      },
+      {
+        "event": "REQ:/health",
+        "verdict": "APPROVED",
+        "hash": "c33b744dd2f6743c",
+        "ts": 1774210356.9348693
+      }
+    ]
+  }
+}

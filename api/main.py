@@ -1270,3 +1270,84 @@ async def biometric_chat(payload: dict):
         return result
     except Exception as e:
         return {"error": str(e)}
+
+# Cross-Chain Governance Bridge Endpoints
+@app.post("/bridge/anchor")
+async def bridge_anchor():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bridge",
+            os.path.expanduser("~/charlie2/chain_bridge/bridge_engine.py"))
+        br = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(br)
+        return br.run_full_anchor()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/bridge/status")
+async def bridge_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bridge",
+            os.path.expanduser("~/charlie2/chain_bridge/bridge_engine.py"))
+        br = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(br)
+        return br.get_status()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/bridge/latest")
+async def bridge_latest():
+    try:
+        import glob, json as _j
+        proof_dir = os.path.expanduser(
+            "~/charlie2/chain_bridge/proofs")
+        proofs = sorted(glob.glob(f"{proof_dir}/bridge_proof_*.json"))
+        if not proofs:
+            return {"error": "No anchors yet — POST /bridge/anchor first"}
+        with open(proofs[-1]) as f:
+            return _j.load(f)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/bridge/anchor/ethereum")
+async def bridge_ethereum():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bridge",
+            os.path.expanduser("~/charlie2/chain_bridge/bridge_engine.py"))
+        br = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(br)
+        records = br.load_governance_records()
+        root    = br.build_merkle_root(records)
+        return br.anchor_to_ethereum_rpc(root, len(records))
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/bridge/anchor/solana")
+async def bridge_solana():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bridge",
+            os.path.expanduser("~/charlie2/chain_bridge/bridge_engine.py"))
+        br = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(br)
+        records = br.load_governance_records()
+        root    = br.build_merkle_root(records)
+        return br.anchor_to_solana_rpc(root, len(records))
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/bridge/anchor/ipfs")
+async def bridge_ipfs():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("bridge",
+            os.path.expanduser("~/charlie2/chain_bridge/bridge_engine.py"))
+        br = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(br)
+        records = br.load_governance_records()
+        root    = br.build_merkle_root(records)
+        return br.anchor_to_ipfs(root, records)
+    except Exception as e:
+        return {"error": str(e)}

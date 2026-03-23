@@ -1,0 +1,41 @@
+{
+  "anchored_at": "2026-03-23 02:50:02 UTC",
+  "record_count": 1000,
+  "merkle_root": "9672f066e90a6fe186e0df6814561693fb1461d68943d2b48d57edb9f62469b0",
+  "anchors": {
+    "ethereum": {
+      "chain": "ethereum",
+      "status": "anchored",
+      "block_number": 24718534,
+      "block_hash": "0x3537109df9a03a56a30b1b767105fb...",
+      "block_timestamp": 1774248587,
+      "anchor_hash": "1097fc0c0e4ee08057fd1c33ce3620cbf75ada80332e4ca579e20bb1bbd2ef8c",
+      "merkle_root": "9672f066e90a6fe186e0df6814561693...",
+      "record_count": 1000,
+      "payload_hex": "7b2273797374656d223a22434841524c494532222c226f776e6572223a22636c...",
+      "note": "Anchor hash ties governance Merkle root to Ethereum block"
+    },
+    "solana": {
+      "chain": "solana",
+      "status": "anchored",
+      "slot": 408274804,
+      "block_time": 1774248587,
+      "anchor_hash": "d8de637dd8636f13097e0a9096bcaab214d6b503a03feaa79cc984620bde91ac",
+      "merkle_root": "9672f066e90a6fe186e0df6814561693...",
+      "record_count": 1000,
+      "payload_hex": "7b2273797374656d223a22434841524c494532222c226f776e6572223a22636c...",
+      "note": "Anchor hash ties governance Merkle root to Solana slot"
+    },
+    "ipfs": {
+      "chain": "ipfs",
+      "status": "anchored",
+      "cid": "Qmf5d92b6416fb90829df0c5c015a9dff0c4e49c40d2c1",
+      "content_hash": "f5d92b6416fb90829df0c5c015a9dff0",
+      "size_bytes": 1015,
+      "local_path": "/data/data/com.termux/files/home/charlie2/chain_bridge/anchors/ipfs_1774248602.json",
+      "note": "CID derived from content hash \u2014 permanent and verifiable"
+    }
+  },
+  "sovereign_seal": "4b03db6dc20caad096591af7e035833c033cfddcd76c1063f163e865ab4f7dbf",
+  "system": "Charlie 2.0 Cross-Chain Bridge"
+}

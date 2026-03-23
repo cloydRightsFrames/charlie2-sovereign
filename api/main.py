@@ -942,3 +942,95 @@ async def constitution_schedule():
                 "log": "~/charlie2/logs/living_const.log"}
     except Exception as e:
         return {"error": str(e)}
+
+# Autonomous AI Legislature Endpoints
+@app.post("/legislature/session")
+async def legislature_session():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("leg",
+            os.path.expanduser("~/charlie2/legislature/legislature.py"))
+        leg = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(leg)
+        return leg.run_session()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/legislature/status")
+async def legislature_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("leg",
+            os.path.expanduser("~/charlie2/legislature/legislature.py"))
+        leg = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(leg)
+        return leg.get_status()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/legislature/laws")
+async def legislature_laws():
+    try:
+        import glob, json as _j
+        enacted_dir = os.path.expanduser("~/charlie2/legislature/enacted")
+        vetoed_dir  = os.path.expanduser("~/charlie2/legislature/vetoed")
+        enacted = []
+        for f in sorted(glob.glob(f"{enacted_dir}/*.json"))[-10:]:
+            with open(f) as fh:
+                d = _j.load(fh)
+            enacted.append({
+                "bill_id":    d.get("bill",{}).get("bill_id",""),
+                "title":      d.get("bill",{}).get("bill_title",""),
+                "category":   d.get("bill",{}).get("category",""),
+                "enacted":    d.get("bill",{}).get("drafted_ts",""),
+                "hash":       d.get("hash","")
+            })
+        return {
+            "enacted_count": len(os.listdir(enacted_dir)),
+            "vetoed_count":  len(os.listdir(vetoed_dir)),
+            "recent_laws":   enacted
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/legislature/bills")
+async def legislature_bills():
+    try:
+        import glob, json as _j
+        sessions = []
+        for d in [
+            os.path.expanduser("~/charlie2/legislature/enacted"),
+            os.path.expanduser("~/charlie2/legislature/vetoed")
+        ]:
+            for f in sorted(glob.glob(f"{d}/*.json"))[-5:]:
+                with open(f) as fh: rec = _j.load(fh)
+                sessions.append({
+                    "bill_id":  rec.get("bill",{}).get("bill_id",""),
+                    "title":    rec.get("bill",{}).get("bill_title",""),
+                    "ruling":   rec.get("ruling",{}).get("ruling",""),
+                    "vote":     rec.get("debate",{}).get("vote","")
+                })
+        return {"bills": sessions}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/legislature/schedule")
+async def legislature_schedule():
+    try:
+        import subprocess as _sub
+        running = bool(_sub.run(
+            ["pgrep","-f","legislature.py session"],
+            capture_output=True).stdout.strip())
+        if running:
+            return {"status": "already running"}
+        _sub.Popen(
+            ["nohup","python",
+             os.path.expanduser("~/charlie2/legislature/legislature.py"),
+             "session"],
+            stdout=open(
+                os.path.expanduser("~/charlie2/logs/legislature.log"),"a"),
+            stderr=_sub.STDOUT)
+        return {"status": "session started",
+                "log": "~/charlie2/logs/legislature.log"}
+    except Exception as e:
+        return {"error": str(e)}

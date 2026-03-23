@@ -705,3 +705,153 @@ async def stream_constitutional(payload: dict):
             "X-Accel-Buffering":           "no",
             "Access-Control-Allow-Origin": "*"
         })
+
+# Federated Mesh Network Endpoints
+@app.get("/mesh/status")
+async def mesh_status():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        nodes = m.load_nodes()
+        online = sum(1 for n in nodes.values()
+                     if n.get("status","online") == "online")
+        return {
+            "node_id":    m.NODE_ID,
+            "mesh_size":  len(nodes),
+            "online":     online,
+            "offline":    len(nodes) - online,
+            "governance_records": m.get_governance_count(),
+            "tor_onion":  m.get_tor_onion(),
+            "nodes":      nodes
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/mesh/nodes")
+async def mesh_nodes():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return {"nodes": m.load_nodes(), "this_node": m.NODE_ID}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/mesh/join")
+async def mesh_join(payload: dict):
+    node_info = payload.get("node", {})
+    if not node_info.get("node_id"):
+        return {"error": "node_id required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        nodes = m.load_nodes()
+        node_info["last_seen"] = __import__("time").time()
+        node_info["status"]    = "online"
+        nodes[node_info["node_id"]] = node_info
+        m.save_nodes(nodes)
+        m.log_mesh(f"NODE_JOINED:{node_info['node_id'][:8]}",
+                   "APPROVED", node_info.get("ip",""))
+        return {"status": "joined", "mesh_size": len(nodes),
+                "welcome": "Charlie 2.0 Sovereign Mesh"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/mesh/infer")
+async def mesh_infer(payload: dict):
+    prompt   = payload.get("prompt", "")
+    provider = payload.get("provider", "auto")
+    if not prompt: return {"error": "prompt required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m.mesh_inference(prompt, provider)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/mesh/proof")
+async def mesh_proof():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m.generate_mesh_proof()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/mesh/consensus")
+async def mesh_consensus(payload: dict):
+    record_hash = payload.get("hash", "")
+    if not record_hash: return {"error": "hash required"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        nodes = m.load_nodes()
+        return m.consensus_check(record_hash, nodes)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/mesh/chain-summary")
+async def mesh_chain_summary():
+    try:
+        import sqlite3 as _sq
+        con = _sq.connect(os.path.expanduser("~/charlie2/charlie2.db"))
+        j = con.execute("SELECT COUNT(*) FROM judicial_log").fetchone()[0]
+        e = con.execute("SELECT COUNT(*) FROM executive_log").fetchone()[0]
+        latest = con.execute(
+            "SELECT hash,ts FROM judicial_log ORDER BY ts DESC LIMIT 1"
+        ).fetchone()
+        con.close()
+        return {
+            "count":       j + e,
+            "judicial":    j,
+            "executive":   e,
+            "latest_hash": latest[0] if latest else "",
+            "latest_ts":   latest[1] if latest else 0
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/mesh/verify-record")
+async def mesh_verify_record(payload: dict):
+    record_hash = payload.get("hash", "")
+    if not record_hash: return {"verified": False}
+    try:
+        import sqlite3 as _sq
+        con = _sq.connect(os.path.expanduser("~/charlie2/charlie2.db"))
+        row = con.execute(
+            "SELECT id FROM judicial_log WHERE hash=?",
+            (record_hash,)).fetchone()
+        con.close()
+        return {"verified": bool(row), "hash": record_hash}
+    except Exception as e:
+        return {"verified": False, "error": str(e)}
+
+@app.post("/mesh/broadcast")
+async def mesh_broadcast():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mesh",
+            os.path.expanduser("~/charlie2/mesh/mesh_node.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m.discovery_broadcast()
+        return {"status": "broadcast sent", "node_id": m.NODE_ID}
+    except Exception as e:
+        return {"error": str(e)}

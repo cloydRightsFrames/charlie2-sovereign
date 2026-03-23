@@ -1,0 +1,23 @@
+{
+  "proof_type": "MESH_PARTICIPATION",
+  "node_id": "0458476e864a53cd",
+  "mesh_size": 2,
+  "governance_records": 1788,
+  "tor_onion": "2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion",
+  "local_ip": "100.76.32.97",
+  "timestamp": "2026-03-23 02:00:45 UTC",
+  "mesh_hash": "957daf241f9b8b958e098b6009e8ccdfccf15c28496bf40e7bc8e2d5b630f1b6",
+  "sovereign_seal": "e1af6d723720cdb3a919d92c1e8c9fb97257cd552247f1b2dae5a3fde4962fc8",
+  "nodes": {
+    "9be4c81fd38eca61": {
+      "ip": "100.76.32.97",
+      "device": "Samsung Galaxy A16",
+      "governance_count": 1777
+    },
+    "de8161e7f3a6c264": {
+      "ip": "100.76.32.97",
+      "device": "Samsung Galaxy A16",
+      "governance_count": 1787
+    }
+  }
+}

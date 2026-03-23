@@ -1034,3 +1034,72 @@ async def legislature_schedule():
                 "log": "~/charlie2/logs/legislature.log"}
     except Exception as e:
         return {"error": str(e)}
+
+# Proof of Sovereign Intelligence Endpoints
+@app.post("/posi/issue")
+async def posi_issue():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("posi",
+            os.path.expanduser("~/charlie2/sovereign_proof/posi_engine.py"))
+        posi = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(posi)
+        cert = posi.issue_certificate()
+        return {
+            "issued":         True,
+            "node_id":        cert["node_identity"]["node_id"],
+            "uptime_days":    cert["proof_of_operation"]["uptime_days"],
+            "records":        cert["proof_of_governance"]["total_decisions"],
+            "sovereign_seal": cert["sovereign_seal"],
+            "fingerprint":    cert["fingerprint"],
+            "issued_at":      cert["issued_at"],
+            "verify_url":     f"http://{cert['node_identity']['tor_onion']}/posi/verify"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/posi/verify")
+async def posi_verify():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("posi",
+            os.path.expanduser("~/charlie2/sovereign_proof/posi_engine.py"))
+        posi = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(posi)
+        return posi.verify_certificate()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/posi/latest")
+async def posi_latest():
+    try:
+        import json as _j
+        pub = os.path.expanduser(
+            "~/charlie2/sovereign_proof/public/latest_posi.json")
+        with open(pub) as f:
+            return _j.load(f)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/posi/status")
+async def posi_status():
+    try:
+        import glob, json as _j
+        cert_dir = os.path.expanduser(
+            "~/charlie2/sovereign_proof/certificates")
+        certs = sorted(glob.glob(f"{cert_dir}/posi_*.json"))
+        if not certs:
+            return {"certificates": 0, "status": "none issued yet"}
+        with open(certs[-1]) as f: latest = _j.load(f)
+        return {
+            "certificates_issued": len(certs),
+            "latest_seal":    latest.get("sovereign_seal","")[:32] + "...",
+            "latest_fingerprint": latest.get("fingerprint",""),
+            "issued_at":      latest.get("issued_at",""),
+            "uptime_days":    latest.get("proof_of_operation",{}).get("uptime_days",0),
+            "total_records":  latest.get("proof_of_governance",{}).get("total_decisions",0),
+            "constitution_version": latest.get("proof_of_constitution",{}).get("version",""),
+            "tor_verify":     f"http://{latest.get('node_identity',{}).get('tor_onion','')}/posi/verify"
+        }
+    except Exception as e:
+        return {"error": str(e)}

@@ -1,0 +1,12 @@
+{
+  "certificate_type": "PROOF_OF_SOVEREIGN_INTELLIGENCE",
+  "issued_at": "2026-03-23 02:24:54 UTC",
+  "node_id": "3fec1f4a2717f2568e98f0e7",
+  "tor_onion": "2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion",
+  "uptime_days": 1.05,
+  "governance_records": 3794,
+  "constitution_version": "1.0",
+  "sovereign_seal": "32ae4640d60358ba7a8c38a956e840d4c9da265b8a5b581e10feaa66eaac4247",
+  "fingerprint": "36dbd1ffd3a5cffb",
+  "verify_at": "http://2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion/zkp/verify"
+}

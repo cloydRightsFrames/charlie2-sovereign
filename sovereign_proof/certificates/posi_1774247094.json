@@ -1,0 +1,49 @@
+{
+  "certificate_type": "PROOF_OF_SOVEREIGN_INTELLIGENCE",
+  "version": "1.0",
+  "issued_by": "cloydRightsFrames",
+  "system": "Charlie 2.0 Sovereign",
+  "issued_at": "2026-03-23 02:24:54 UTC",
+  "valid_from": "2026-03-23",
+  "node_identity": {
+    "node_id": "3fec1f4a2717f2568e98f0e7",
+    "public_key": "NQOwoJz7IPyO+F/IdzFcCeu32OTOXaxE",
+    "device": "Samsung Galaxy A16",
+    "arch": "aarch64",
+    "platform": "Termux/Android16",
+    "tor_onion": "2feulm4uczwznjvapwadeardwmzpco6jhyarp4t2abguthyhczwyfxid.onion"
+  },
+  "proof_of_operation": {
+    "uptime_hours": 25.18,
+    "uptime_days": 1.05,
+    "first_record": 1774156422.7413359,
+    "last_record": 1774247082.211759,
+    "continuous": true
+  },
+  "proof_of_governance": {
+    "total_decisions": 3794,
+    "judicial_records": 1897,
+    "executive_records": 1890,
+    "legislative_records": 7,
+    "blocked_requests": 2,
+    "governance_active": true
+  },
+  "proof_of_constitution": {
+    "version": "1.0",
+    "articles_enforced": 6,
+    "total_amendments": 0,
+    "is_living": true,
+    "compliant": true
+  },
+  "cryptographic_chain": {
+    "genesis": "3c3a98a0d9d17de4eb97f607149f3c3d",
+    "layer1_identity": "fbe52ec7bb7d3775b162d253acd64110",
+    "layer2_uptime": "c8bfefdeca6b134e997484288b79fd14",
+    "layer3_const": "a60a5d5d8b70a689d12a218c6ebc2e1f",
+    "layer4_judicial": "4a9d5ecb4eb72368d1c8a031a9597bf0",
+    "sovereign_seal": "32ae4640d60358ba7a8c38a956e840d4c9da265b8a5b581e10feaa66eaac4247"
+  },
+  "sovereign_seal": "32ae4640d60358ba7a8c38a956e840d4c9da265b8a5b581e10feaa66eaac4247",
+  "verification_note": "This certificate proves continuous sovereign AI operation with governance, constitutional compliance, and tamper-evident audit chain. Verifiable without revealing private data.",
+  "fingerprint": "36dbd1ffd3a5cffb"
+}

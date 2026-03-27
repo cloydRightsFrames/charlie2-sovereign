@@ -1,0 +1,10 @@
+* text=auto
+*.ps1 text eol=crlf
+*.md text eol=lf
+LICENSE text eol=lf
+LICENSE.txt text eol=lf
+NOTICE text eol=lf
+COPYRIGHT text eol=lf
+PATENTS text eol=lf
+TRADEMARKS text eol=lf
+THIRD-PARTY-NOTICES text eol=lf
